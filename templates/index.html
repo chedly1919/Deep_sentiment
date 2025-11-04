@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentiment Predictor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 Analyse de Sentiment</h1>
+    <p class="subtitle">Écrivez un commentaire ou choisissez un tweet depuis la base</p>
+
+    <textarea id="textInput" placeholder="Saisissez ou sélectionnez un texte..."></textarea>
+
+    <div class="btn-group">
+      <button id="analyzeBtn">Analyser</button>
+      <button id="loadBtn">Charger un tweet</button>
+    </div>
+
+    <div id="tweetSelectContainer" style="display: none;">
+      <select id="tweetSelect">
+        <option value="">Sélectionnez un tweet...</option>
+      </select>
+      <button id="confirmTweetBtn">✅ Valider</button>
+    </div>
+
+    <div id="result" class="result-box"></div>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

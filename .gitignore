@@ -1,0 +1,29 @@
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Environnements
+env/
+venv/
+ENV/
+.venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Modèles lourds
+*.h5
+*.pt
+*.pkl
+*.zip
+
