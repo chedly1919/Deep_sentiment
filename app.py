@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 from transformers import pipeline
 from markupsafe import Markup
@@ -6,6 +6,9 @@ import pandas as pd
 import random
 import logging
 import os
+
+# === Import du module caméra ===
+from modules.livesentiment import gen_frames
 
 # ============================================================
 # 🧠 Flask App – Accueil + Sentiment Analysis + Modules IA
@@ -47,10 +50,8 @@ def welcome():
 
 
 # ------------------------------------------------------------
-# 🔹 PAGE : Prédire un sentiment (page existante)
+# 🔹 PAGE : Prédire un sentiment
 # ------------------------------------------------------------
-from markupsafe import Markup  # ✅ à placer en haut de ton fichier app.py
-
 @app.route("/predictor")
 def predictor_page():
     """Affiche la page principale de prédiction de sentiment avec bouton retour"""
@@ -62,11 +63,8 @@ def predictor_page():
             cursor:pointer;transition:0.3s;'>⬅️ Retour à l'accueil</button>
     </div>
     """
-
     page_content = render_template("index.html")
     return Markup(back_button_html + page_content)
-
-
 
 
 # ------------------------------------------------------------
@@ -103,23 +101,35 @@ def recommend_page():
     """
 
 
-
 # ------------------------------------------------------------
-# 🔹 PAGE : Caméra – Détection d’émotion en live (placeholder)
+# 🔹 PAGE : Caméra – Détection d’émotion intégrée
 # ------------------------------------------------------------
 @app.route("/camera")
 def camera_page():
+    """Affiche la page caméra intégrée directement dans Flask"""
     return """
-    <div style='text-align:center; font-family:sans-serif; margin-top:40px;'>
+    <div style='text-align:center; font-family:sans-serif; margin-top:30px;'>
         <div style='position:absolute; top:20px; left:20px;'>
-            <button onclick="window.location.href='/'" 
+            <button onclick="window.location.href='/'"
                 style='background:#007bff;color:white;border:none;
                 padding:10px 15px;border-radius:8px;font-size:14px;cursor:pointer;'>⬅️ Retour à l'accueil</button>
         </div>
-        <h1>🎥 Module caméra – en développement...</h1>
+        <h1>🎥 Détection d’émotion en direct</h1>
+        <p>Analyse de ton humeur via la webcam en temps réel :</p>
+        <div style='display:flex;justify-content:center;margin-top:20px;'>
+            <img src="/video_feed" width="700" style="border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.3);"/>
+        </div>
     </div>
     """
 
+
+# ------------------------------------------------------------
+# 🔹 FLUX VIDÉO – Diffusion en continu (MJPEG)
+# ------------------------------------------------------------
+@app.route("/video_feed")
+def video_feed():
+    """Diffuse le flux vidéo depuis la webcam"""
+    return Response(gen_frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
 # ------------------------------------------------------------
@@ -132,7 +142,6 @@ def get_all_tweets():
         if df.empty:
             return jsonify({"error": "Le dataset est vide ou introuvable."}), 404
 
-        # Sélection d’un échantillon aléatoire de 1000 tweets max
         sample_df = df.sample(min(1000, len(df)))
         tweets = [{"text": t} for t in sample_df["text"].tolist()]
         return jsonify({"tweets": tweets})
