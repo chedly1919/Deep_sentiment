@@ -142,7 +142,7 @@ def get_all_tweets():
 
 
 # ------------------------------------------------------------
-# 🔹 API : Prédiction du sentiment avec DistilBERT
+# 🔹 API : Prédiction du sentiment avec DistilBERT (ajout NEUTRAL)
 # ------------------------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -153,20 +153,36 @@ def predict():
         if not text.strip():
             return jsonify({"error": "Aucun texte fourni."}), 400
 
+        # --- Liste simplifiée de mots "forts" (positifs/négatifs) ---
+        strong_words = [
+            "love", "hate", "great", "bad", "amazing", "awful", "horrible", "fantastic",
+            "terrible", "happy", "sad", "angry", "wonderful", "disgusting", "excited",
+            "boring", "awesome", "worst", "best", "enjoy", "cry", "pain", "fear"
+        ]
+
+        # --- Score d’intensité émotionnelle (nb de mots forts) ---
+        tokens = text.lower().split()
+        strong_hits = sum(1 for w in tokens if w in strong_words)
+
+        # --- Prédiction DistilBERT ---
         result = sentiment_model(text)[0]
-        label = result["label"]
+        label = result["label"].upper()
         score = round(float(result["score"]), 3)
+
+        # --- Détection neutre selon confiance & émotion ---
+        if strong_hits == 0 or (0.45 <= score <= 0.75):
+            label = "NEUTRAL"
 
         return jsonify({
             "text": text,
             "sentiment_predicted": label,
-            "confidence": score
+            "confidence": score,
+            "emotion_strength": strong_hits
         })
 
     except Exception as e:
         logging.exception("Erreur de prédiction :")
         return jsonify({"error": str(e)}), 500
-
 
 # ------------------------------------------------------------
 # 🔹 API : Tweet aléatoire (optionnel)
