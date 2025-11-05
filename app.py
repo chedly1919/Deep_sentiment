@@ -7,6 +7,9 @@ import random
 import logging
 import os
 
+# === Import du Chatbot (Blueprint) ===
+from modules.chatbot.app import chatbot_bp
+
 # === Import du module caméra ===
 from modules.livesentiment import gen_frames
 
@@ -16,6 +19,9 @@ from modules.livesentiment import gen_frames
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 CORS(app)
+
+# === Enregistrement du Blueprint Chatbot ===
+app.register_blueprint(chatbot_bp)
 
 # ------------------------------------------------------------
 # 🔹 Chargement du modèle Transformers
@@ -45,7 +51,7 @@ else:
 # ------------------------------------------------------------
 @app.route("/")
 def welcome():
-    """Page d'accueil avec menu"""
+    """Page d'accueil avec menu principal"""
     return render_template("welcome.html")
 
 
@@ -57,7 +63,7 @@ def predictor_page():
     """Affiche la page principale de prédiction de sentiment avec bouton retour"""
     back_button_html = """
     <div style='position:absolute; top:20px; left:20px;'>
-        <button onclick="window.location.href='/'" 
+        <button onclick="window.location.href='/'"
             style='background:#007bff;color:white;border:none;
             padding:10px 15px;border-radius:8px;font-size:14px;
             cursor:pointer;transition:0.3s;'>⬅️ Retour à l'accueil</button>
@@ -68,31 +74,15 @@ def predictor_page():
 
 
 # ------------------------------------------------------------
-# 🔹 PAGE : Chatbot émotionnel (placeholder)
-# ------------------------------------------------------------
-@app.route("/chatbot")
-def chatbot_page():
-    return """
-    <div style='text-align:center; font-family:sans-serif; margin-top:40px;'>
-        <div style='position:absolute; top:20px; left:20px;'>
-            <button onclick="window.location.href='/'" 
-                style='background:#007bff;color:white;border:none;
-                padding:10px 15px;border-radius:8px;font-size:14px;cursor:pointer;'>⬅️ Retour à l'accueil</button>
-        </div>
-        <h1>🤖 Chatbot émotionnel – en développement...</h1>
-    </div>
-    """
-
-
-# ------------------------------------------------------------
 # 🔹 PAGE : Système de recommandation (placeholder)
 # ------------------------------------------------------------
 @app.route("/recommend")
 def recommend_page():
+    """Page placeholder du système de recommandation"""
     return """
     <div style='text-align:center; font-family:sans-serif; margin-top:40px;'>
         <div style='position:absolute; top:20px; left:20px;'>
-            <button onclick="window.location.href='/'" 
+            <button onclick="window.location.href='/'"
                 style='background:#007bff;color:white;border:none;
                 padding:10px 15px;border-radius:8px;font-size:14px;cursor:pointer;'>⬅️ Retour à l'accueil</button>
         </div>
