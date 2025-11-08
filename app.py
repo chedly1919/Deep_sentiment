@@ -13,15 +13,16 @@ from modules.chatbot.app import chatbot_bp
 # === Import du module caméra ===
 from modules.livesentiment import gen_frames
 
+
 # ============================================================
 # 🧠 Flask App – Accueil + Sentiment Analysis + Modules IA
 # ============================================================
-
 app = Flask(__name__, template_folder="templates", static_folder="static")
 CORS(app)
 
 # === Enregistrement du Blueprint Chatbot ===
 app.register_blueprint(chatbot_bp)
+
 
 # ------------------------------------------------------------
 # 🔹 Chargement du modèle Transformers
@@ -32,6 +33,7 @@ sentiment_model = pipeline(
     model="distilbert-base-uncased-finetuned-sst-2-english"
 )
 print("✅ Modèle chargé avec succès !")
+
 
 # ------------------------------------------------------------
 # 🔹 Chargement du dataset nettoyé (Sentiment140 clean)
@@ -60,35 +62,9 @@ def welcome():
 # ------------------------------------------------------------
 @app.route("/predictor")
 def predictor_page():
-    """Affiche la page principale de prédiction de sentiment avec bouton retour"""
-    back_button_html = """
-    <div style='position:absolute; top:20px; left:20px;'>
-        <button onclick="window.location.href='/'"
-            style='background:#007bff;color:white;border:none;
-            padding:10px 15px;border-radius:8px;font-size:14px;
-            cursor:pointer;transition:0.3s;'>⬅️ Retour à l'accueil</button>
-    </div>
-    """
-    page_content = render_template("index.html")
-    return Markup(back_button_html + page_content)
+    """Affiche la page principale de prédiction de sentiment"""
+    return render_template("index.html")
 
-
-# ------------------------------------------------------------
-# 🔹 PAGE : Système de recommandation (placeholder)
-# ------------------------------------------------------------
-@app.route("/recommend")
-def recommend_page():
-    """Page placeholder du système de recommandation"""
-    return """
-    <div style='text-align:center; font-family:sans-serif; margin-top:40px;'>
-        <div style='position:absolute; top:20px; left:20px;'>
-            <button onclick="window.location.href='/'"
-                style='background:#007bff;color:white;border:none;
-                padding:10px 15px;border-radius:8px;font-size:14px;cursor:pointer;'>⬅️ Retour à l'accueil</button>
-        </div>
-        <h1>🎯 Système de recommandation – en développement...</h1>
-    </div>
-    """
 
 
 # ------------------------------------------------------------
@@ -96,21 +72,19 @@ def recommend_page():
 # ------------------------------------------------------------
 @app.route("/camera")
 def camera_page():
-    """Affiche la page caméra intégrée directement dans Flask"""
-    return """
-    <div style='text-align:center; font-family:sans-serif; margin-top:30px;'>
-        <div style='position:absolute; top:20px; left:20px;'>
-            <button onclick="window.location.href='/'"
-                style='background:#007bff;color:white;border:none;
-                padding:10px 15px;border-radius:8px;font-size:14px;cursor:pointer;'>⬅️ Retour à l'accueil</button>
-        </div>
-        <h1>🎥 Détection d’émotion en direct</h1>
-        <p>Analyse de ton humeur via la webcam en temps réel :</p>
-        <div style='display:flex;justify-content:center;margin-top:20px;'>
-            <img src="/video_feed" width="700" style="border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.3);"/>
-        </div>
-    </div>
+    """Affiche la page caméra avec le design Sentio"""
+    return render_template("camera.html")
+
+# ------------------------------------------------------------
+# 🔹 Lancement caméra via bouton (JSON)
+# ------------------------------------------------------------
+@app.route("/run_camera")
+def run_camera():
     """
+    Lance la caméra et renvoie un message JSON.
+    Le flux vidéo sera ensuite affiché via /video_feed.
+    """
+    return jsonify({"status": "ok", "message": "Caméra lancée avec succès ✅"})
 
 
 # ------------------------------------------------------------
@@ -142,25 +116,24 @@ def get_all_tweets():
 
 
 # ------------------------------------------------------------
-# 🔹 API : Prédiction du sentiment avec DistilBERT (ajout NEUTRAL)
+# 🔹 API : Prédiction du sentiment + Recommandation automatique
 # ------------------------------------------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
-    """Analyse le sentiment d’un texte saisi ou sélectionné"""
+    """Analyse le sentiment d’un texte saisi ou sélectionné et renvoie une recommandation"""
     try:
         data = request.get_json() or {}
         text = data.get("text", "")
         if not text.strip():
             return jsonify({"error": "Aucun texte fourni."}), 400
 
-        # --- Liste simplifiée de mots "forts" (positifs/négatifs) ---
+        # --- Liste simplifiée de mots "forts" ---
         strong_words = [
             "love", "hate", "great", "bad", "amazing", "awful", "horrible", "fantastic",
             "terrible", "happy", "sad", "angry", "wonderful", "disgusting", "excited",
             "boring", "awesome", "worst", "best", "enjoy", "cry", "pain", "fear"
         ]
 
-        # --- Score d’intensité émotionnelle (nb de mots forts) ---
         tokens = text.lower().split()
         strong_hits = sum(1 for w in tokens if w in strong_words)
 
@@ -169,23 +142,46 @@ def predict():
         label = result["label"].upper()
         score = round(float(result["score"]), 3)
 
-        # --- Détection neutre selon confiance & émotion ---
+        # --- Neutralité selon confiance et intensité ---
         if strong_hits == 0 or (0.45 <= score <= 0.75):
             label = "NEUTRAL"
+
+        # --- Génération d'une recommandation automatique ---
+        recommendations = {
+            "POSITIVE": [
+                "Keep that energy! You’re on the right track 🌟",
+                "Stay motivated — good vibes attract good things ✨",
+                "Celebrate your wins, big or small 🎉"
+            ],
+            "NEUTRAL": [
+                "Take a deep breath and center yourself 🌿",
+                "Maybe take a short walk — it always helps ☕",
+                "Keep a balanced mindset, that’s your strength ⚖️"
+            ],
+            "NEGATIVE": [
+                "Tough days don’t last — you’ve got this 💪",
+                "Remember: every storm runs out of rain 🌧️☀️",
+                "It’s okay to pause — self-care is productive ❤️"
+            ]
+        }
+
+        recommendation = random.choice(recommendations.get(label, ["Stay calm and move forward."]))
 
         return jsonify({
             "text": text,
             "sentiment_predicted": label,
             "confidence": score,
-            "emotion_strength": strong_hits
+            "emotion_strength": strong_hits,
+            "recommendation": recommendation
         })
 
     except Exception as e:
         logging.exception("Erreur de prédiction :")
         return jsonify({"error": str(e)}), 500
 
+
 # ------------------------------------------------------------
-# 🔹 API : Tweet aléatoire (optionnel)
+# 🔹 API : Tweet aléatoire
 # ------------------------------------------------------------
 @app.route("/tweet", methods=["GET"])
 def get_random_tweet():
