@@ -66,7 +66,6 @@ def predictor_page():
     return render_template("index.html")
 
 
-
 # ------------------------------------------------------------
 # 🔹 PAGE : Caméra – Détection d’émotion intégrée
 # ------------------------------------------------------------
@@ -75,15 +74,13 @@ def camera_page():
     """Affiche la page caméra avec le design Sentio"""
     return render_template("camera.html")
 
+
 # ------------------------------------------------------------
 # 🔹 Lancement caméra via bouton (JSON)
 # ------------------------------------------------------------
 @app.route("/run_camera")
 def run_camera():
-    """
-    Lance la caméra et renvoie un message JSON.
-    Le flux vidéo sera ensuite affiché via /video_feed.
-    """
+    """Lance la caméra et renvoie un message JSON."""
     return jsonify({"status": "ok", "message": "Caméra lancée avec succès ✅"})
 
 
@@ -127,7 +124,7 @@ def predict():
         if not text.strip():
             return jsonify({"error": "Aucun texte fourni."}), 400
 
-        # --- Liste simplifiée de mots "forts" ---
+        # --- Liste de mots à forte polarité ---
         strong_words = [
             "love", "hate", "great", "bad", "amazing", "awful", "horrible", "fantastic",
             "terrible", "happy", "sad", "angry", "wonderful", "disgusting", "excited",
@@ -142,9 +139,15 @@ def predict():
         label = result["label"].upper()
         score = round(float(result["score"]), 3)
 
-        # --- Neutralité selon confiance et intensité ---
-        if strong_hits == 0 or (0.45 <= score <= 0.75):
+        # --- Ajustement intelligent de la neutralité ---
+        text_len = len(text.split())
+        if score < 0.4:
             label = "NEUTRAL"
+        elif 0.4 <= score < 0.65 and strong_hits == 0:
+            label = "NEUTRAL"
+        elif text_len < 4 and score < 0.7:
+            label = "NEUTRAL"
+        # Sinon : garder la prédiction du modèle
 
         # --- Génération d'une recommandation automatique ---
         recommendations = {
